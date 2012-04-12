@@ -965,7 +965,7 @@ namespace MPTvClient
                         // that is deleted in the meantime
                         recInfo.channel = rec.IdChannel.ToString();
                     }
-                    recInfo.title = rec.Title;
+                    recInfo.title = rec.EpisodeName.Length>0 ? rec.EpisodeName:rec.Title;
                     recInfo.description = rec.Description;
                     recInfo.genre = rec.Genre;
                     recInfo.timeInfo = rec.StartTime.ToString("u") + "|" + rec.EndTime.ToString("u");
@@ -994,6 +994,7 @@ namespace MPTvClient
                 {
                     string recording;
                     string channelname;
+                    string title;
                     string rtspURL = GetRecordingURL(rec.IdRecording, server, resolveHostnames, ref OriginalURL);//server.GetStreamUrlForFileName(rec.IdRecording);
 
                     //XBMC pvr side:
@@ -1029,12 +1030,12 @@ namespace MPTvClient
                         // that is deleted in the meantime
                         channelname = rec.IdChannel.ToString();
                     }
-
+                    title = rec.EpisodeName.Length > 0 ? rec.EpisodeName : rec.Title;
                     recording = rec.IdRecording.ToString() + "|"  // 0
                         + rec.StartTime.ToString("u") + "|"       // 1
                         + rec.EndTime.ToString("u") + "|"         // 2
                         + channelname.Replace("|", "") + "|"      // 3
-                        + rec.Title.Replace("|","") + "|"         // 4
+                        + title.Replace("|","") + "|"         // 4
                         + rec.Description.Replace("|", "") + "|"  // 5
                         + rtspURL + "|"                           // 6
                         + rec.FileName + "|"                      // 7
@@ -1223,6 +1224,10 @@ namespace MPTvClient
                     String strEndTime;
                     String strIdChannel;
                     String strProgramName;
+                    bool bHasAProgram = true;
+
+                    if (sched.IdParentSchedule != -1) //If it has a parent it's a recording of a serie we won't use this.
+                        continue;
 
                     //XBMC pvr side:
                     //
@@ -1258,26 +1263,28 @@ namespace MPTvClient
                     strEndTime = sched.EndTime.ToString("u");
                     strIdChannel = sched.IdChannel.ToString();
                     strProgramName = sched.ProgramName;
-
                     try
                     {
-                      IList<Program> progs = Schedule.GetProgramsForSchedule(sched);
-                      if (progs.Count > 0) //Currently xbmc use the last occurence of each program has the next recording, when fixe we should return all resolved program.
-                      {
-                        Program pr = progs[0];
-                        strStartTime = pr.StartTime.ToString("u");
-                        strEndTime = pr.EndTime.ToString("u");
-                        strIdChannel = pr.IdChannel.ToString();
-                        strProgramName = pr.Title;
-                        if (pr.EpisodeName.Length>0)
-                          strProgramName += " - " + pr.EpisodeName;
-                        if (pr.IsRecording)
-                          strIsRecording = "True";
-                      }
-                    }
+                            IList<Program> progs = Schedule.GetProgramsForSchedule(sched);
+                            if (progs.Count > 0) //Currently xbmc use the last occurence of each program has the next recording, when fixe we should return all resolved program.
+                            {
+                                Program pr = progs[0];
+                                strStartTime = pr.StartTime.ToString("u");
+                                strEndTime = pr.EndTime.ToString("u");
+                                strIdChannel = pr.IdChannel.ToString();
+                                strProgramName = pr.Title;
+                                if (pr.EpisodeName.Length > 0)
+                                    strProgramName += " - " + pr.EpisodeName;
+                                if (pr.IsRecording)
+                                    strIsRecording = "True";
+                            }
+                            else bHasAProgram = false;
+                       }
                     catch
                     { }
-
+                    
+                    if (!bHasAProgram)
+                        continue;
                     schedule = sched.IdSchedule.ToString() + "|"
                         + strStartTime + "|"
                         + strEndTime + "|"
