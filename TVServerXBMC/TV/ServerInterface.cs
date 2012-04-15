@@ -1283,8 +1283,15 @@ namespace MPTvClient
                     catch
                     { }
                     
-                    if (!bHasAProgram)
+                    if (!bHasAProgram && (ScheduleRecordingType)sched.ScheduleType!=(ScheduleRecordingType.Once))
                         continue;
+                    else if (!bHasAProgram) //IF the schedule did not resolve to any program, typical when creating an Instant Recording frm XBMC and the name does not match a program name.
+                    {
+                        VirtualCard card;
+                        TvControl.TvServer tv = new TvServer();
+                        if(tv.IsRecordingSchedule(sched.IdSchedule, out card))
+                            strIsRecording = "True";
+                    }
                     schedule = sched.IdSchedule.ToString() + "|"
                         + strStartTime + "|"
                         + strEndTime + "|"
