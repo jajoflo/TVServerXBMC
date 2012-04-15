@@ -1265,33 +1265,34 @@ namespace MPTvClient
                     strProgramName = sched.ProgramName;
                     try
                     {
-                            IList<Program> progs = Schedule.GetProgramsForSchedule(sched);
-                            if (progs.Count > 0) //Currently xbmc use the last occurence of each program has the next recording, when fixe we should return all resolved program.
-                            {
-                                Program pr = progs[0];
-                                strStartTime = pr.StartTime.ToString("u");
-                                strEndTime = pr.EndTime.ToString("u");
-                                strIdChannel = pr.IdChannel.ToString();
-                                strProgramName = pr.Title;
-                                if (pr.EpisodeName.Length > 0)
-                                    strProgramName += " - " + pr.EpisodeName;
-                                if (pr.IsRecording)
-                                    strIsRecording = "True";
-                            }
-                            else bHasAProgram = false;
-                       }
+                        IList<Program> progs = Schedule.GetProgramsForSchedule(sched);
+                        if (progs.Count > 0) //Currently xbmc use the last occurence of each program has the next recording, when fixe we should return all resolved program.
+                        {
+                            Program pr = progs[0];
+                            strStartTime = pr.StartTime.ToString("u");
+                            strEndTime = pr.EndTime.ToString("u");
+                            strIdChannel = pr.IdChannel.ToString();
+                            strProgramName = pr.Title;
+                            if (pr.EpisodeName.Length > 0)
+                                strProgramName += " - " + pr.EpisodeName;
+                            if (pr.IsRecording)
+                                strIsRecording = "True";
+                        }
+                        else if((ScheduleRecordingType)sched.ScheduleType!=(ScheduleRecordingType.Once))
+                        {
+                            continue; //This timer does not resolve to a program. Do not return it until we have a state for it in XBMC.
+                        }
+                        else //IF the schedule did not resolve to any program, typical when creating an Instant Recording frm XBMC and the name does not match a program name.
+                        {
+                            VirtualCard card;
+                            TvControl.TvServer tv = new TvServer();
+                            if(tv.IsRecordingSchedule(sched.IdSchedule, out card))
+                                strIsRecording = "True";
+                        }
+                    }
                     catch
                     { }
                     
-                    if (!bHasAProgram && (ScheduleRecordingType)sched.ScheduleType!=(ScheduleRecordingType.Once))
-                        continue;
-                    else if (!bHasAProgram) //IF the schedule did not resolve to any program, typical when creating an Instant Recording frm XBMC and the name does not match a program name.
-                    {
-                        VirtualCard card;
-                        TvControl.TvServer tv = new TvServer();
-                        if(tv.IsRecordingSchedule(sched.IdSchedule, out card))
-                            strIsRecording = "True";
-                    }
                     schedule = sched.IdSchedule.ToString() + "|"
                         + strStartTime + "|"
                         + strEndTime + "|"
